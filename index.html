@@ -240,6 +240,23 @@ h3{color:#e0c778;text-shadow:1px 1px #080b12}
 @media(min-width:901px){.stage{top:12px}}
 @media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.card{padding:12px}}
 
+
+/* Global account and community leaderboard */
+.community{grid-column:1/-1;background:var(--panel);border:2px solid var(--line);box-shadow:0 4px 0 var(--edge);padding:14px;display:grid;gap:12px}
+.community h2{font:700 1.1rem/1.3 var(--f-px)}
+.community-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.community input{width:100%;min-height:40px;background:var(--bg);border:2px solid var(--line);padding:6px 10px}
+.community .fld{display:grid;gap:5px}
+.community .lb{font-weight:700}
+.community .status{font-size:.9rem;color:var(--mute)}
+.community .leader-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.community .leader-row:last-child{border-bottom:0}
+.community .rank{font:700 1rem var(--f-px);color:var(--mute)}
+.community .leader-name{overflow-wrap:anywhere;font-weight:700}
+.community .leader-time{font-variant-numeric:tabular-nums;white-space:nowrap}
+.community .hint{font-size:.85rem;color:var(--mute)}
+@media(max-width:700px){.community-grid{grid-template-columns:minmax(0,1fr)}}
+
 </style>
 
 <div class="wrap" id="app">
@@ -247,6 +264,25 @@ h3{color:#e0c778;text-shadow:1px 1px #080b12}
     <h1 class="brand">Focus Reading Evolution</h1>
     <p class="tag" id="totalTag">อ่านสะสม 0.0 / 540 ชั่วโมง</p>
   </header>
+  <section class="community" aria-label="บัญชีและอันดับเวลาอ่านส่วนกลาง">
+    <h2>บัญชีผู้อ่านและอันดับชุมชน</h2>
+    <p class="status" id="cloudStatus" role="status">กำลังเชื่อมต่อระบบชุมชน…</p>
+    <div class="community-grid">
+      <div class="pane">
+        <div class="fld"><label class="lb" for="cloudUsername">ชื่อที่แสดง (ใช้ตอนสมัคร)</label><input id="cloudUsername" maxlength="24" autocomplete="nickname" placeholder="เช่น BookWanderer"></div>
+        <div class="fld"><label class="lb" for="cloudEmail">อีเมล</label><input id="cloudEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <div class="fld"><label class="lb" for="cloudPassword">รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input id="cloudPassword" type="password" minlength="6" autocomplete="current-password" placeholder="รหัสผ่าน"></div>
+        <div class="row"><button class="btn primary" type="button" id="cloudSignup">สมัครสมาชิก</button><button class="btn" type="button" id="cloudLogin">เข้าสู่ระบบ</button><button class="btn small" type="button" id="cloudLogout" hidden>ออกจากระบบ</button></div>
+        <p class="hint">บัญชีใช้สำหรับอันดับส่วนกลางเท่านั้น ข้อมูลเวลาอ่านเก่าที่บันทึกในเครื่องจะไม่ถูกนำไปรวมอัตโนมัติ</p>
+      </div>
+      <div>
+        <h3>อันดับเวลาอ่านสะสม</h3>
+        <p class="status" id="leaderSummary">ยังไม่มีข้อมูลอันดับ</p>
+        <div id="leaderboard" aria-live="polite"><p class="hint">กำลังโหลดอันดับ…</p></div>
+        <button class="btn small" type="button" id="leaderRefresh">รีเฟรชอันดับ</button>
+      </div>
+    </div>
+  </section>
   <div id="warn" class="warn" hidden>เบราว์เซอร์นี้เก็บข้อมูลในเครื่องไม่ได้ ความคืบหน้าจะหายเมื่อปิดหน้า ลองเปิดนอกโหมดส่วนตัว หรือใช้ปุ่มส่งออกข้อมูลในแท็บตั้งค่า</div>
 
   <section class="stage" aria-label="ฉากพื้นที่ที่พัฒนาตามเวลาอ่าน">
@@ -354,6 +390,7 @@ h3{color:#e0c778;text-shadow:1px 1px #080b12}
 </div>
 <div id="toast" class="toast" role="status" hidden></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
 'use strict';
@@ -1658,6 +1695,7 @@ function tick() {
 function startTimer() {
   var tm = S.tm;
   tm.running = true; tm.last = Date.now();
+  cloudHeartbeat(true, true);
   if (!subjById(S.cur)) { S.cur = S.subjects[0].id; }
 }
 function pauseTimer() { S.tm.running = false; }
@@ -1669,6 +1707,7 @@ function endSession() {
 function skipBreak() {
   var tm = S.tm;
   tm.phase = 'focus'; tm.el = 0; tm.running = true; tm.last = Date.now();
+  cloudHeartbeat(true, true);
 }
 function setMode(m) {
   var tm = S.tm;
@@ -2063,6 +2102,7 @@ var lastSig = '';
 function second() {
   var sig;
   tick();
+  cloudHeartbeat(false);
   afterTick();
   renderDynamic();
   audioSync();
@@ -2101,9 +2141,10 @@ document.addEventListener('click', function (e) {
     setMode(btn.getAttribute('data-v')); afterAction();
   } else if (act === 'toggle') {
     audioCtx();
-    if (S.tm.running) { pauseTimer(); } else { startTimer(); }
+    if (S.tm.running) { if (S.tm.phase === 'focus') { cloudHeartbeat(true, false); } pauseTimer(); } else { startTimer(); }
     afterAction();
   } else if (act === 'end') {
+    if (S.tm.running && S.tm.phase === 'focus') { cloudHeartbeat(true, false); }
     endSession(); afterAction();
   } else if (act === 'skip') {
     skipBreak(); afterAction();
@@ -2236,6 +2277,110 @@ function frame(ts) {
   }
 }
 
+/* ---------- ระบบบัญชีและอันดับส่วนกลาง (Supabase) ---------- */
+var CLOUD_URL = 'https://jmibcyhfncuwogwtqysf.supabase.co';
+var CLOUD_PUBLISHABLE_KEY = 'sb_publishable_lEOp0AdNmue6kiZ7GMEiYg_v_SCj18E';
+var cloudClient = null, cloudUser = null, cloudHeartbeatAt = 0, cloudBusy = false, cloudWasActive = false;
+function cloudStatus(msg) { var el = $('cloudStatus'); if (el) { el.textContent = msg; } }
+function formatCloudTime(sec) {
+  sec = Math.max(0, Math.floor(Number(sec) || 0));
+  var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return h + ' ชม. ' + m + ' นาที';
+}
+function cloudError(err) {
+  var msg = err && err.message ? err.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+  cloudStatus('ระบบชุมชน: ' + msg);
+}
+async function refreshLeaderboard() {
+  if (!cloudClient) { return; }
+  var board = $('leaderboard'), summary = $('leaderSummary');
+  board.innerHTML = '<p class="hint">กำลังโหลดอันดับ…</p>';
+  var result = await cloudClient.from('profiles').select('id,username,total_seconds').order('total_seconds', { ascending: false }).limit(50);
+  if (result.error) { board.textContent = 'โหลดอันดับไม่สำเร็จ: ' + result.error.message; return; }
+  var rows = result.data || [], html = '', i, safeName;
+  if (!rows.length) { board.innerHTML = '<p class="hint">ยังไม่มีผู้ใช้ในอันดับ ลองสมัครสมาชิกเป็นคนแรก</p>'; }
+  else {
+    for (i = 0; i < rows.length; i++) {
+      safeName = esc(rows[i].username || 'Reader');
+      html += '<div class="leader-row"><span class="rank">' + (i + 1) + '</span><span class="leader-name">' + safeName + (cloudUser && rows[i].id === cloudUser.id ? ' (คุณ)' : '') + '</span><span class="leader-time">' + formatCloudTime(rows[i].total_seconds) + '</span></div>';
+    }
+    board.innerHTML = html;
+  }
+  summary.textContent = 'แสดง ' + rows.length + ' อันดับแรก · อัปเดต ' + new Date().toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
+}
+async function cloudSyncAuth() {
+  if (!cloudClient) { return; }
+  var res = await cloudClient.auth.getSession();
+  if (res.error) { cloudError(res.error); return; }
+  cloudUser = res.data.session ? res.data.session.user : null;
+  $('cloudLogout').hidden = !cloudUser;
+  $('cloudSignup').hidden = !!cloudUser;
+  $('cloudLogin').hidden = !!cloudUser;
+  $('cloudUsername').disabled = !!cloudUser;
+  $('cloudEmail').disabled = !!cloudUser;
+  $('cloudPassword').disabled = !!cloudUser;
+  if (cloudUser) {
+    cloudStatus('เข้าสู่ระบบแล้ว: ' + (cloudUser.user_metadata && cloudUser.user_metadata.username ? cloudUser.user_metadata.username : cloudUser.email) + ' · เริ่มนับเวลาอ่านส่วนกลางเฉพาะจากนี้');
+    await cloudHeartbeat(true, !!(S && S.tm && S.tm.running && S.tm.phase === 'focus'));
+  } else {
+    cloudStatus('ยังไม่ได้เข้าสู่ระบบ · เวลาอ่านจะยังบันทึกในเครื่องตามปกติ');
+  }
+  await refreshLeaderboard();
+}
+async function cloudSignup() {
+  if (!cloudClient) { return; }
+  var email = $('cloudEmail').value.trim(), password = $('cloudPassword').value, username = $('cloudUsername').value.trim();
+  if (!username || username.length > 24) { cloudStatus('กรุณากรอกชื่อที่แสดง 1–24 ตัวอักษร'); return; }
+  if (!email || password.length < 6) { cloudStatus('กรุณากรอกอีเมลและรหัสผ่านอย่างน้อย 6 ตัว'); return; }
+  var r = await cloudClient.auth.signUp({email:email,password:password,options:{data:{username:username}}});
+  if (r.error) { cloudError(r.error); return; }
+  if (r.data.session) { cloudUser = r.data.user; cloudStatus('สมัครสมาชิกสำเร็จ'); await cloudSyncAuth(); }
+  else { cloudStatus('ส่งอีเมลยืนยันแล้ว หากระบบขอการยืนยันอีเมล ให้เปิดอีเมลก่อนเข้าสู่ระบบ'); }
+}
+async function cloudLogin() {
+  if (!cloudClient) { return; }
+  var r = await cloudClient.auth.signInWithPassword({email:$('cloudEmail').value.trim(),password:$('cloudPassword').value});
+  if (r.error) { cloudError(r.error); return; }
+  cloudUser = r.data.user;
+  await cloudSyncAuth();
+}
+async function cloudLogout() {
+  if (!cloudClient) { return; }
+  if (S && S.tm && S.tm.running && S.tm.phase === 'focus') { await cloudHeartbeat(true, false); }
+  var r = await cloudClient.auth.signOut();
+  if (r.error) { cloudError(r.error); return; }
+  cloudUser = null; cloudStatus('ออกจากระบบแล้ว · ตัวจับเวลาและข้อมูลในเครื่องยังใช้ได้ตามปกติ');
+  $('cloudLogout').hidden = true; $('cloudSignup').hidden = false; $('cloudLogin').hidden = false;
+  $('cloudUsername').disabled = false; $('cloudEmail').disabled = false; $('cloudPassword').disabled = false;
+  await refreshLeaderboard();
+}
+async function cloudHeartbeat(force, active) {
+  if (!cloudClient || !cloudUser || cloudBusy) { return; }
+  if (typeof active !== 'boolean') { active = !!(S && S.tm && S.tm.running && S.tm.phase === 'focus'); }
+  var now = Date.now();
+  if (!force && active && now - cloudHeartbeatAt < 30000) { return; }
+  if (!force && !active && !cloudWasActive) { return; }
+  cloudBusy = true; cloudHeartbeatAt = now;
+  try {
+    var r = await cloudClient.rpc('record_reading_time', { p_active: active });
+    if (r.error) { cloudStatus('บันทึกเวลาอ่านส่วนกลางไม่สำเร็จ: ' + r.error.message); }
+    else { cloudWasActive = active; await refreshLeaderboard(); }
+  } catch (e) { cloudError(e); }
+  finally { cloudBusy = false; }
+}
+function initCloud() {
+  if (!window.supabase || !window.supabase.createClient) {
+    cloudStatus('โหลดไลบรารีระบบสมาชิกไม่สำเร็จ ตรวจการเชื่อมต่ออินเทอร์เน็ต'); return;
+  }
+  cloudClient = window.supabase.createClient(CLOUD_URL, CLOUD_PUBLISHABLE_KEY);
+  $('cloudSignup').addEventListener('click', cloudSignup);
+  $('cloudLogin').addEventListener('click', cloudLogin);
+  $('cloudLogout').addEventListener('click', cloudLogout);
+  $('leaderRefresh').addEventListener('click', refreshLeaderboard);
+  cloudClient.auth.onAuthStateChange(function () { setTimeout(cloudSyncAuth, 0); });
+  cloudSyncAuth();
+}
+
 /* ---------- เริ่มทำงาน ---------- */
 load();
 if (S.tm.running) {
@@ -2248,6 +2393,7 @@ shownEra = curEra();
 finShown = S.total >= GOAL_H * 3600;
 buildTrack();
 renderAll();
+initCloud();
 wakeSync();
 requestAnimationFrame(frame);
 setInterval(second, 1000);
