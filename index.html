@@ -2791,7 +2791,10 @@ function fmtHM(sec) {
 /* ===== บัญชีและอันดับ (Supabase ผ่าน REST ตรง ไม่ใช้ไลบรารี) =====
    ใส่ค่าสองบรรทัดนี้ตาม README (ค่า anon key เป็นค่าสาธารณะ ปลอดภัยที่จะอยู่ในโค้ด เพราะสิทธิ์คุมด้วย RLS ฝั่งฐานข้อมูล)
    ถ้าเว้นว่าง แอปยังใช้ได้ตามปกติโดยไม่มีหน้าอันดับออนไลน์ */
-var CLOUD = { url: '', key: '' };
+var CLOUD = {
+  url: 'https://tsdrxhfbfxfubcrsvewj.supabase.co',
+  key: 'sb_publishable_uFkRYqBeV4OZ2J5HOWJK-w_4YADhVNl'
+};
 
 var THEME = 'auto';
 try { THEME = localStorage.getItem('fre.theme') || 'auto'; } catch (e0) { }
