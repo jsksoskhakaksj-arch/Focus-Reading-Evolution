@@ -110,6 +110,10 @@ ul{list-style:none}
 .screen{position:relative;background:#6aa8e8;line-height:0;overflow:hidden;box-shadow:0 0 0 2px var(--pxf2)}
 #scene{width:100%;height:auto;aspect-ratio:216/172;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .scrolls{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;gap:6px;max-width:64%;line-height:1.35}
+.news details{border-top:1px solid var(--line);padding:8px 0}
+.news summary{cursor:pointer;font-weight:700;color:var(--head);list-style-position:inside}
+.news summary small{font-weight:500;color:var(--mut,#7a7a6a);margin-left:6px}
+.news ul{margin:6px 0 2px 20px;padding:0;list-style:disc}.news li{margin:3px 0;line-height:1.45}
 .scrollTog{align-self:flex-start;min-height:28px;padding:2px 10px;font:600 12px var(--f-body);color:#4a3318;background:#f8ecc4;border:2px solid #8a6230;border-radius:999px;box-shadow:0 0 0 2px #3a2810;cursor:pointer;opacity:.92}
 .scrollTog:hover{opacity:1}
 .scrolls.off .scroll{display:none}
@@ -492,6 +496,11 @@ input[type=email]{min-height:44px;width:100%;padding:6px 12px;border:2px solid v
             <p>กติกาการนับ: นับเฉพาะเวลาอ่านขณะจับเวลาเดิน เวลาพักไม่ถูกนับ การสลับแท็บไม่ทำให้เวลาหยุด วันที่อ่านครบ 10 นาทีขึ้นไปนับเป็นสตรีค หากขาดวัน สตรีคเริ่มใหม่ แต่ชั่วโมงสะสมและยุคที่ปลดล็อกแล้วไม่หาย ถ้าเครื่องหลับหรือปิดหน้านานเกิน 2 นาที ช่วงนั้นจะไม่ถูกนับและตัวจับเวลาจะหยุดรอ</p>
           </div>
         </section>
+        <section class="card" id="newsCard">
+          <h2><svg class="ic"><use href="#i-book"/></svg>มีอะไรใหม่</h2>
+          <div id="newsList"></div>
+          <p class="hint" id="newsBuild"></p>
+        </section>
         <section class="card" id="decoCard">
           <h2><svg class="ic"><use href="#i-leaf"/></svg>ตกแต่งเกาะ</h2>
           <div class="fld"><label for="setIName">ชื่อเกาะ (แสดงบนป้าย)</label><input type="text" id="setIName" maxlength="14" placeholder="เกาะของฉัน" autocomplete="off"></div>
@@ -749,6 +758,15 @@ function eraProgress(hours, idx) {
   var p = (hours - a) / (b - a);
   return p < 0 ? 0 : (p > 1 ? 1 : p);
 }
+
+/* ===== บันทึกการอัปเดต (ใหม่สุดอยู่บนสุด) d = วันที่ yyyy-mm-dd; ก่อนหน้านั้นไม่มีบันทึกวันที่ ===== */
+var CHANGES = [
+  { d: '2026-10-25', t: 'สำรองความคืบหน้าอัตโนมัติ', i: ['ล็อกอินแล้วแอปสำรองชั่วโมงอ่าน บันทึกรายวัน ชื่อวิชา และการตั้งค่าขึ้นบัญชีให้เอง ไม่ต้องกดซิงก์', 'รวมข้อมูลจากหลายเครื่องแบบไม่ลดลง ปิดได้ที่หน้าอันดับ', 'มีหน้า "มีอะไรใหม่" ในตั้งค่า'] },
+  { d: '2026-10-25', t: 'ซิงก์การตกแต่งเกาะ + สภาพอากาศ', i: ['สกิน ชื่อเกาะ และของตกแต่งตามไปทุกเครื่องที่ล็อกอิน', 'สภาพอากาศบนเกาะ: ฝน หมอก หิมะ หรืออัตโนมัติ', 'โหมดประหยัดเครื่องสำหรับเครื่องช้า'] },
+  { d: '2026-10-25', t: 'ตกแต่งเกาะเอง', i: ['ตั้งชื่อเกาะขึ้นบนป้าย', 'วางโคมไฟ ม้านั่ง น้ำพุ สวนดอกไม้ ธงประดับ กองไฟ ได้ 8 ช่อง ปลดล็อกตามชั่วโมงอ่าน', 'ปุ่มซ่อน/แสดงแถบข้อความบนฉากเกาะ'] },
+  { d: '2026-10-25', t: 'สกินเกาะ 9 แบบ', i: ['คลาสสิก ซากุระ Frostveil Azure Paradise Emerald Haven Whispering Woods Lost Civilization Ashen Frontier Neo Terra', 'ของตกแต่งประจำสกินปลดล็อกตามชั่วโมงอ่านสะสม', 'สัตว์ประจำเกาะ พืชพรรณ และสีอาคารเปลี่ยนตามสกิน', 'โทนแสงเช้าและเย็นตามเวลาเครื่อง', 'แถบแจ้งเตือนเมื่อมีเวอร์ชันใหม่ให้กดรีเฟรช'] },
+  { d: '', t: 'ก่อนวันที่ 25 ต.ค. 2569 (ไม่มีบันทึกวันที่)', i: ['ติดตั้งเป็นแอปบนคอมและมือถือได้ (PWA)', 'โทนสีมืด', 'สถิติการใช้งานรวมแบบไม่ระบุตัวตน', 'ล็อกอินและอันดับผู้ใช้', 'หน้าตาใหม่แบบแดชบอร์ดอบอุ่น + ฉากเกาะไอโซเมตริก 14 ยุค', 'จับเวลาอิสระและ Pomodoro วิชา สถิติ สตรีค เป้าหมายรายวัน เสียงบรรยากาศ'] }
+];
 
 /* ===== ฉากพิกเซลไอโซเมตริก: แกนกลาง =====
    เกาะลอยฟ้า 9x9 ช่อง มุมกล้องเดิมทุกยุค โครงฉาก: ฟ้า > เมฆหลัง > เกาะ (แคช) > วัตถุเรียงตามความลึก > เมฆหน้า */
@@ -2796,7 +2814,6 @@ var CLOUD = {
   key: 'sb_publishable_uFkRYqBeV4OZ2J5HOWJK-w_4YADhVNl'
 };
 
-
 var THEME = 'auto';
 try { THEME = localStorage.getItem('fre.theme') || 'auto'; } catch (e0) { }
 function applyTheme() {
@@ -3491,7 +3508,7 @@ function renderBook() {
   }
   setHTML($('bkBody'), evs);
 }
-var BUILD = 'a35fd009bc';
+var BUILD = '76bb85974f';
 function renderSkinSel() {
   var sel = $('setSkin'), i, id, d, h = '', hrs = S.total / 3600, c;
   for (i = 0; i < SKIN_ORDER.length; i++) { id = SKIN_ORDER[i]; h += '<option value="' + id + '">' + SKINS[id].name + '</option>'; }
@@ -3499,6 +3516,19 @@ function renderSkinSel() {
   sel.value = SKIN;
   d = SKINS[SKIN]; c = skinCount(SKIN, hrs);
   $('skinInfo').textContent = d.desc + (SKIN === 'classic' ? '' : ' · ของตกแต่งปลดล็อก ' + c + '/' + d.props.length + ' ชิ้น (ปลดล็อกตามชั่วโมงอ่านรวม)');
+}
+function renderNews() {
+  var box = $('newsList'), h = '', i, j, c, ds;
+  if (!box || box.getAttribute('data-r')) { return; }
+  for (i = 0; i < CHANGES.length; i++) {
+    c = CHANGES[i]; ds = '';
+    if (c.d) { try { ds = new Date(c.d + 'T12:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { ds = c.d; } }
+    h += '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(c.t) + (ds ? '<small>' + esc(ds) + '</small>' : '') + '</summary><ul>';
+    for (j = 0; j < c.i.length; j++) { h += '<li>' + esc(c.i[j]) + '</li>'; }
+    h += '</ul></details>';
+  }
+  box.className = 'news'; box.innerHTML = h; box.setAttribute('data-r', '1');
+  $('newsBuild').textContent = 'รหัสรุ่นที่ใช้อยู่: ' + BUILD + ' · อัปเดตล่าสุด ' + (CHANGES[0].d ? new Date(CHANGES[0].d + 'T12:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '-');
 }
 function renderDeco() {
   var box = $('decoList'), h = '', i, j, hrs = S.total / 3600, nxt = -1, n = 0, sel;
@@ -3518,6 +3548,7 @@ function renderDeco() {
   $('setLite').checked = LITE;
 }
 function renderSettings() {
+  renderNews();
   renderDeco();
   var h = '', i, s;
   $('setGoal').value = S.set.goal; $('setFocus').value = S.set.focus; $('setBreak').value = S.set.brk;
@@ -3772,6 +3803,11 @@ renderAll();
 wakeSync();
 cBoot();
 try {
+  (function () {
+    var seen = null;
+    try { seen = localStorage.getItem('fre.seen'); localStorage.setItem('fre.seen', BUILD); } catch (e) { }
+    if (seen && seen !== BUILD) { setTimeout(function () { toast('แอปอัปเดตแล้ว ดูรายการที่เปลี่ยนได้ที่ ตั้งค่า → มีอะไรใหม่'); }, 1500); }
+  })();
   (function () {
     var box = $('scrolls'), btn = $('scrollTog'), off = false;
     try { off = localStorage.getItem('fre.hud') === 'off'; } catch (e) { }
