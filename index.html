@@ -2796,6 +2796,7 @@ var CLOUD = {
   key: 'sb_publishable_uFkRYqBeV4OZ2J5HOWJK-w_4YADhVNl'
 };
 
+
 var THEME = 'auto';
 try { THEME = localStorage.getItem('fre.theme') || 'auto'; } catch (e0) { }
 function applyTheme() {
@@ -2926,6 +2927,74 @@ function cPush(force) {
     return cFetch('/rest/v1/profiles?on_conflict=id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: cMine() });
   }).then(function () { CS.lastTotal = tot; CS.lastPush = now; return true; });
 }
+/* ===== สำรองความคืบหน้าอัตโนมัติขึ้นบัญชี (ตาราง user_state เห็นเฉพาะเจ้าของ) =====
+   หลักการ: รวมข้อมูลแบบ "ไม่ลดลง" เสมอ ไม่เขียนทับของที่มากกว่า */
+var BS = { sig: '', pushAt: 0, pullAt: 0, busy: false, msg: '', okAt: 0 };
+function bkOn() { try { return localStorage.getItem('fre.backup') !== 'off'; } catch (e) { return true; } }
+function bkPack() { return { v: 1, total: Math.floor(S.total), subjects: S.subjects, cur: S.cur, days: S.days, gd: S.gd, set: S.set }; }
+function bkSig() {
+  var t = S.days[today()];
+  return Math.floor(S.total) + '|' + (t ? t.n : 0) + '|' + JSON.stringify(S.subjects) + '|' + JSON.stringify(S.set) + '|' + S.gd;
+}
+function bkSum(days) { var k, n = 0; for (k in days) { if (days.hasOwnProperty(k)) { n += days[k].sec; } } return n; }
+function bkMerge(c) {
+  var before = bkSig() + '|' + Object.keys(S.days).length, fresh = S.total === 0 && !Object.keys(S.days).length, offL, offC, k, l, r, sid, i, have = {}, old = S.total;
+  offL = Math.max(0, S.total - bkSum(S.days)); offC = Math.max(0, c.total - bkSum(c.days));
+  for (k in c.days) {
+    if (!c.days.hasOwnProperty(k)) { continue; }
+    r = c.days[k]; l = S.days[k];
+    if (!l) { S.days[k] = { sec: r.sec, n: r.n, by: JSON.parse(JSON.stringify(r.by)) }; continue; }
+    l.sec = Math.max(l.sec, r.sec); l.n = Math.max(l.n, r.n);
+    for (sid in r.by) { if (r.by.hasOwnProperty(sid)) { l.by[sid] = Math.max(l.by[sid] || 0, r.by[sid]); } }
+  }
+  S.total = Math.max(old, bkSum(S.days) + Math.max(offL, offC));
+  for (i = 0; i < S.subjects.length; i++) { have[S.subjects[i].id] = 1; }
+  for (i = 0; i < c.subjects.length && S.subjects.length < 12; i++) { if (!have[c.subjects[i].id]) { S.subjects.push(c.subjects[i]); have[c.subjects[i].id] = 1; } }
+  if (c.gd > S.gd) { S.gd = c.gd; }
+  if (fresh) { S.set = c.set; if (have[c.cur]) { S.cur = c.cur; } }
+  return before !== bkSig() + '|' + Object.keys(S.days).length;
+}
+function bkPush(keep) {
+  var body = { id: CS.uid, data: bkPack(), total_sec: Math.floor(S.total), updated_at: new Date().toISOString() }, sig = bkSig();
+  return cEnsure().then(function () {
+    var h = { apikey: CLOUD.key, 'Content-Type': 'application/json', Authorization: 'Bearer ' + CS.tok, Prefer: 'resolution=merge-duplicates,return=minimal' }, txt = JSON.stringify(body);
+    if (keep && txt.length < 60000) { return fetch(CLOUD.url.replace(/\/$/, '') + '/rest/v1/user_state?on_conflict=id', { method: 'POST', headers: h, body: txt, keepalive: true }); }
+    return cFetch('/rest/v1/user_state?on_conflict=id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: body });
+  }).then(function () { BS.sig = sig; BS.pushAt = Date.now(); BS.okAt = Date.now(); });
+}
+function bkSync(force) {
+  var now = Date.now(), pulled = false;
+  if (!cloudOn() || !signedIn() || !bkOn() || BS.busy) { return Promise.resolve('skip'); }
+  if (!force && now - BS.pullAt < 300000 && bkSig() === BS.sig) { return Promise.resolve('idle'); }
+  if (!force && bkSig() !== BS.sig && now - BS.pushAt < 60000 && now - BS.pullAt < 300000) { return Promise.resolve('wait'); }
+  BS.busy = true;
+  return cEnsure().then(function () {
+    if (!force && now - BS.pullAt < 300000) { return null; }
+    pulled = true;
+    return cFetch('/rest/v1/user_state?select=data&id=eq.' + encodeURIComponent(CS.uid));
+  }).then(function (r) {
+    var row = r && r[0], c, changed = false;
+    if (pulled) {
+      BS.pullAt = Date.now();
+      if (row && row.data) { c = sanitize(row.data, false); if (c) { changed = bkMerge(c); } }
+      if (changed) { save(); if (typeof renderAll === 'function') { renderAll(); } }
+    }
+    if (force || changed || bkSig() !== BS.sig || !row && pulled) { return bkPush(false).then(function () { return changed ? 'merged' : 'pushed'; }); }
+    return 'same';
+  }).then(function (m) { BS.busy = false; BS.msg = ''; return m; }, function (e) { BS.busy = false; BS.msg = 'สำรองอัตโนมัติไม่สำเร็จ: ' + cWhy(e); throw e; });
+}
+function bkFlush() {
+  if (!cloudOn() || !signedIn() || !bkOn() || BS.busy || bkSig() === BS.sig) { return; }
+  bkPush(true).catch(function () { });
+}
+function bkWipe() {
+  if (!cloudOn() || !signedIn()) { return Promise.resolve(); }
+  BS.sig = ''; BS.pullAt = 0;
+  return cEnsure().then(function () { return cFetch('/rest/v1/user_state?id=eq.' + encodeURIComponent(CS.uid), { method: 'DELETE' }); }).catch(function () { });
+}
+document.addEventListener('visibilitychange', function () { if (document.hidden) { bkFlush(); } else { bkSync(false).catch(function () { }); } });
+window.addEventListener('pagehide', bkFlush);
+
 /* ===== ซิงก์การตกแต่งเกาะ (สกิน ชื่อเกาะ ของตกแต่ง) ขึ้นบัญชี: ตารางแยก เห็นเฉพาะเจ้าของ ===== */
 var ISL_K = 'fre.isl_at', islT = 0;
 function islAt() { try { return Number(localStorage.getItem(ISL_K)) || 0; } catch (e) { return 0; } }
@@ -2981,7 +3050,7 @@ function cRender() {
     return;
   }
   if (!signedIn()) {
-    h += '<div class="card"><h2>เข้าสู่ระบบเพื่อขึ้นอันดับ</h2><p class="hint">ไม่บังคับ แอปใช้ได้ปกติโดยไม่ล็อกอิน เมื่อล็อกอินจะส่งเฉพาะ ชื่อเล่นที่คุณตั้ง ชั่วโมงอ่านรวม ยุคที่ถึง สตรีค และเวลาอ่านสัปดาห์นี้ ไม่ส่งอีเมล ชื่อวิชา หรือบันทึกรายวัน</p>';
+    h += '<div class="card"><h2>เข้าสู่ระบบเพื่อขึ้นอันดับ</h2><p class="hint">ไม่บังคับ แอปใช้ได้ปกติโดยไม่ล็อกอิน เมื่อล็อกอิน อันดับสาธารณะจะเห็นเฉพาะ ชื่อเล่นที่คุณตั้ง ชั่วโมงอ่านรวม ยุคที่ถึง สตรีค และเวลาอ่านสัปดาห์นี้ ไม่เห็นอีเมล ชื่อวิชา หรือบันทึกรายวัน นอกจากนี้แอปจะสำรองความคืบหน้าของคุณ (ชั่วโมงอ่าน บันทึกรายวัน ชื่อวิชา และการตั้งค่า) ไว้ในบัญชีโดยอัตโนมัติ เห็นเฉพาะคุณ ไม่ขึ้นอันดับ ปิดได้หลังล็อกอิน</p>';
     h += '<div class="row"><button type="button" class="btn" data-act="cGoogle">เข้าสู่ระบบด้วย Google</button></div>';
     h += '<div class="fld" style="margin-top:12px"><label for="cMail">หรือรับลิงก์เข้าสู่ระบบทางอีเมล</label><div class="row"><input type="email" id="cMail" class="grow" placeholder="you@example.com" autocomplete="email"><button type="button" class="btn small" data-act="cMail">ส่งลิงก์</button></div></div>';
     if (CS.msg) { h += '<p class="hint">' + esc(CS.msg) + '</p>'; }
@@ -2990,6 +3059,8 @@ function cRender() {
     h += '<div class="card"><h2>บัญชีของคุณ</h2><p class="hint">เข้าสู่ระบบแล้ว' + (CS.mail ? ' (' + esc(CS.mail) + ' เห็นเฉพาะคุณ)' : '') + '</p>';
     h += '<div class="fld"><label for="cNick">ชื่อเล่นที่แสดงในอันดับ (2-20 ตัวอักษร ห้ามใช้ชื่อจริงหรืออีเมล)</label><div class="row"><input type="text" id="cNick" class="grow" maxlength="20" value="' + esc(CS.nick) + '"><button type="button" class="btn small" data-act="cNick">บันทึกชื่อ</button></div></div>';
     h += '<label class="chk"><input type="checkbox" id="cShow"' + (CS.show ? ' checked' : '') + '> แสดงฉันในอันดับสาธารณะ</label>';
+    h += '<label class="chk"><input type="checkbox" id="cBackup"' + (bkOn() ? ' checked' : '') + '> สำรองความคืบหน้าขึ้นบัญชีอัตโนมัติ (เห็นเฉพาะคุณ ไม่ขึ้นอันดับ)</label>';
+    h += '<p class="hint">' + (bkOn() ? (BS.okAt ? 'สำรองล่าสุด ' + new Date(BS.okAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : 'กำลังเตรียมสำรอง...') : 'ปิดสำรองอัตโนมัติอยู่ ข้อมูลอยู่ในเครื่องนี้เท่านั้น') + (BS.msg ? ' · ' + esc(BS.msg) : '') + '</p>';
     h += '<div class="row"><button type="button" class="btn small" data-act="cSync">ซิงก์ตอนนี้</button><button type="button" class="btn small" data-act="cOut">ออกจากระบบ</button><button type="button" class="btn small danger" data-act="cDel">ลบข้อมูลของฉันบนเซิร์ฟเวอร์</button></div>';
     if (CS.msg) { h += '<p class="hint" style="margin-top:8px">' + esc(CS.msg) + '</p>'; }
     h += '</div>';
@@ -3045,12 +3116,12 @@ document.addEventListener('click', function (e) {
     CS.nick = n; CS.msg = '';
     cPush(true).then(function () { toast('บันทึกชื่อเล่นแล้ว'); return cBoard(); }).then(cRender).catch(function (er) { CS.nick = ''; cErr(er); });
   } else if (act === 'cSync') {
-    cPush(true).then(function () { return islSync().catch(function () { }); }).then(function () { toast(CS.nick ? 'ซิงก์แล้ว (รวมการตกแต่งเกาะ)' : 'ซิงก์การตกแต่งเกาะแล้ว ตั้งชื่อเล่นเพื่อขึ้นอันดับ'); return cBoard(); }).then(cRender).catch(cErr);
+    (CS.nick ? cPush(true) : Promise.resolve()).then(function () { return islSync().catch(function () { }); }).then(function () { return bkSync(true).catch(function () { }); }).then(function () { toast('ซิงก์แล้ว (ความคืบหน้า + การตกแต่งเกาะ' + (CS.nick ? ' + อันดับ)' : ')')); return cBoard(); }).then(cRender).catch(cErr);
   } else if (act === 'cOut') {
     cClear(); CS.msg = ''; cRender(); cRefreshBoard(); toast('ออกจากระบบแล้ว ข้อมูลในเครื่องยังอยู่ครบ');
   } else if (act === 'cDel') {
     confirm2(b, 'cdel', function () {
-      cEnsure().then(function () { return cFetch('/rest/v1/profiles?id=eq.' + encodeURIComponent(CS.uid), { method: 'DELETE' }).then(function () { return cFetch('/rest/v1/island_prefs?id=eq.' + encodeURIComponent(CS.uid), { method: 'DELETE' }); }); })
+      cEnsure().then(function () { return cFetch('/rest/v1/profiles?id=eq.' + encodeURIComponent(CS.uid), { method: 'DELETE' }).then(function () { return cFetch('/rest/v1/island_prefs?id=eq.' + encodeURIComponent(CS.uid), { method: 'DELETE' }); }).then(function () { return cFetch('/rest/v1/user_state?id=eq.' + encodeURIComponent(CS.uid), { method: 'DELETE' }); }); })
         .then(function () { CS.nick = ''; CS.lastTotal = -1; toast('ลบข้อมูลบนเซิร์ฟเวอร์แล้ว'); return cBoard(); }).then(cRender).catch(cErr);
     });
   } else if (act === 'rtab') {
@@ -3060,6 +3131,11 @@ document.addEventListener('click', function (e) {
   }
 });
 document.addEventListener('change', function (e) {
+  if (e.target && e.target.id === 'cBackup') {
+    try { localStorage.setItem('fre.backup', e.target.checked ? 'on' : 'off'); } catch (e5) { }
+    if (e.target.checked) { bkSync(true).then(function () { toast('เปิดสำรองอัตโนมัติแล้ว'); cRender(); }).catch(function (er) { cErr(er); }); } else { toast('ปิดสำรองอัตโนมัติแล้ว ข้อมูลที่สำรองไว้ยังอยู่ ลบได้ที่ปุ่ม "ลบข้อมูลของฉันบนเซิร์ฟเวอร์"'); cRender(); }
+    return;
+  }
   if (e.target && e.target.id === 'cShow') {
     CS.show = e.target.checked;
     if (CS.nick) { cPush(true).then(function () { toast(CS.show ? 'แสดงในอันดับแล้ว' : 'ซ่อนจากอันดับแล้ว'); return cBoard(); }).then(cRender).catch(cErr); }
@@ -3069,9 +3145,9 @@ function cBoot() {
   if (!cloudOn()) { cRender(); return; }
   cLoad();
   cTakeHash().then(function (got) {
-    if (signedIn()) { return cLoadProfile().then(function () { if (got) { toast('เข้าสู่ระบบแล้ว'); } }).catch(function () { }).then(function () { return islSync(); }).then(function (m) { if (m === 'pulled') { toast('นำค่าตกแต่งเกาะจากบัญชีมาใช้แล้ว'); } }).catch(function () { }); }
+    if (signedIn()) { return cLoadProfile().then(function () { if (got) { toast('เข้าสู่ระบบแล้ว'); } }).catch(function () { }).then(function () { return islSync(); }).then(function (m) { if (m === 'pulled') { toast('นำค่าตกแต่งเกาะจากบัญชีมาใช้แล้ว'); } }).catch(function () { }).then(function () { return bkSync(true); }).then(function (m) { if (m === 'merged') { toast('รวมความคืบหน้าจากบัญชีเข้ามาแล้ว'); } cRender(); }).catch(function () { cRender(); }); }
   }).then(function () { cRender(); if (tabNow === 'rank') { cRefreshBoard(); } });
-  setInterval(function () { if (signedIn() && CS.nick) { cPush(false).catch(function () { }); } uReport(); }, 30000);
+  setInterval(function () { if (signedIn() && CS.nick) { cPush(false).catch(function () { }); } bkSync(false).catch(function () { }); uReport(); }, 30000);
   uReport();
 }
 
@@ -3415,7 +3491,7 @@ function renderBook() {
   }
   setHTML($('bkBody'), evs);
 }
-var BUILD = '85871e60b3';
+var BUILD = 'a35fd009bc';
 function renderSkinSel() {
   var sel = $('setSkin'), i, id, d, h = '', hrs = S.total / 3600, c;
   for (i = 0; i < SKIN_ORDER.length; i++) { id = SKIN_ORDER[i]; h += '<option value="' + id + '">' + SKINS[id].name + '</option>'; }
@@ -3600,7 +3676,7 @@ document.addEventListener('click', function (e) {
   } else if (act === 'reset') {
     confirm2(btn, 'rst', function () {
       audioStop(); S = defaultState(); view = null; shownEra = 0; finShown = false;
-      $('ioBox').value = ''; save(); renderAll(); toast('ล้างข้อมูลทั้งหมดแล้ว');
+      $('ioBox').value = ''; save(); renderAll(); bkWipe(); toast('ล้างข้อมูลทั้งหมดแล้ว (รวมข้อมูลสำรองบนบัญชี)');
     });
   }
 });
