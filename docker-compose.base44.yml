@@ -1,0 +1,26 @@
+# Base44 development environment for "Focus Reading Evolution".
+# The app is a single static index.html (no build step), so nginx serves the
+# cloned source directly: the files below are bind-mounted, so edits are live.
+services:
+  web:
+    image: nginx:alpine
+    restart: on-failure
+    ports:
+      - "3000:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./manifest.json:/usr/share/nginx/html/manifest.json:ro
+      - ./sw.js:/usr/share/nginx/html/sw.js:ro
+      - ./icon-192.png:/usr/share/nginx/html/icon-192.png:ro
+      - ./icon-512.png:/usr/share/nginx/html/icon-512.png:ro
+      - ./apple-touch-icon.png:/usr/share/nginx/html/apple-touch-icon.png:ro
+    labels:
+      base44.project: "Focus Reading Evolution"
+      base44.kind: web
+      base44.port: "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/index.html || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
