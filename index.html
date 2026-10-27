@@ -761,6 +761,7 @@ function eraProgress(hours, idx) {
 
 /* ===== บันทึกการอัปเดต (ใหม่สุดอยู่บนสุด) d = วันที่ yyyy-mm-dd; ก่อนหน้านั้นไม่มีบันทึกวันที่ ===== */
 var CHANGES = [
+  { d: '2026-10-27', t: 'แก้ความคืบหน้าปะปนข้ามบัญชี', i: ['ล็อกอินด้วยอีเมลอื่นบนเครื่องเดิม ความคืบหน้า ยุค สกินและของตกแต่งจะเริ่มใหม่ตามบัญชีนั้น ไม่ติดมาจากบัญชีก่อน', 'กลับมาล็อกอินบัญชีเดิมแล้วข้อมูลเดิมของบัญชีนั้นกลับมา'] },
   { d: '2026-10-25', t: 'สำรองความคืบหน้าอัตโนมัติ', i: ['ล็อกอินแล้วแอปสำรองชั่วโมงอ่าน บันทึกรายวัน ชื่อวิชา และการตั้งค่าขึ้นบัญชีให้เอง ไม่ต้องกดซิงก์', 'รวมข้อมูลจากหลายเครื่องแบบไม่ลดลง ปิดได้ที่หน้าอันดับ', 'มีหน้า "มีอะไรใหม่" ในตั้งค่า'] },
   { d: '2026-10-25', t: 'ซิงก์การตกแต่งเกาะ + สภาพอากาศ', i: ['สกิน ชื่อเกาะ และของตกแต่งตามไปทุกเครื่องที่ล็อกอิน', 'สภาพอากาศบนเกาะ: ฝน หมอก หิมะ หรืออัตโนมัติ', 'โหมดประหยัดเครื่องสำหรับเครื่องช้า'] },
   { d: '2026-10-25', t: 'ตกแต่งเกาะเอง', i: ['ตั้งชื่อเกาะขึ้นบนป้าย', 'วางโคมไฟ ม้านั่ง น้ำพุ สวนดอกไม้ ธงประดับ กองไฟ ได้ 8 ช่อง ปลดล็อกตามชั่วโมงอ่าน', 'ปุ่มซ่อน/แสดงแถบข้อความบนฉากเกาะ'] },
@@ -3158,11 +3159,36 @@ document.addEventListener('change', function (e) {
     if (CS.nick) { cPush(true).then(function () { toast(CS.show ? 'แสดงในอันดับแล้ว' : 'ซ่อนจากอันดับแล้ว'); return cBoard(); }).then(cRender).catch(cErr); }
   }
 });
+/* ===== กันข้อมูลข้ามบัญชี: เก็บว่าข้อมูลในเครื่องเป็นของบัญชีไหน ถ้าล็อกอินด้วยบัญชีอื่น ให้เริ่มใหม่ ===== */
+var OWNER_K = 'fre.owner', STASH_K = 'fre.stash.';
+function ownerGuard() {
+  var prev = '', old, st = null, raw = null;
+  if (!signedIn()) { return false; }
+  try { prev = localStorage.getItem(OWNER_K) || ''; } catch (e) { }
+  if (prev && prev !== CS.uid) {
+    /* เก็บสำเนาของบัญชีเดิมไว้ในเครื่อง เผื่อกลับมาล็อกอินบัญชีนั้นอีก (ไม่ปะปนกับบัญชีใหม่) */
+    try { localStorage.setItem(STASH_K + prev, JSON.stringify(S)); } catch (e1) { }
+    try { raw = localStorage.getItem(STASH_K + CS.uid); } catch (e2) { }
+    if (raw) { try { st = sanitize(JSON.parse(raw), true); } catch (e3) { st = null; } }
+    S = st || defaultState();
+    try { localStorage.removeItem(STASH_K + CS.uid); } catch (e4) { }
+    save();
+    SKIN = 'classic'; INAME = ''; DECO = {};
+    try { localStorage.setItem('fre.skin', 'classic'); localStorage.removeItem(ISL_K); } catch (e5) { }
+    saveDeco();
+    BS.sig = ''; BS.pullAt = 0; CS.nick = ''; CS.board = null; CS.lastTotal = -1;
+    try { localStorage.setItem(OWNER_K, CS.uid); } catch (e6) { }
+    if (typeof renderAll === 'function') { renderAll(); }
+    return true;
+  }
+  try { localStorage.setItem(OWNER_K, CS.uid); } catch (e7) { }
+  return false;
+}
 function cBoot() {
   if (!cloudOn()) { cRender(); return; }
   cLoad();
   cTakeHash().then(function (got) {
-    if (signedIn()) { return cLoadProfile().then(function () { if (got) { toast('เข้าสู่ระบบแล้ว'); } }).catch(function () { }).then(function () { return islSync(); }).then(function (m) { if (m === 'pulled') { toast('นำค่าตกแต่งเกาะจากบัญชีมาใช้แล้ว'); } }).catch(function () { }).then(function () { return bkSync(true); }).then(function (m) { if (m === 'merged') { toast('รวมความคืบหน้าจากบัญชีเข้ามาแล้ว'); } cRender(); }).catch(function () { cRender(); }); }
+    if (signedIn()) { if (ownerGuard()) { toast('เปลี่ยนบัญชี เริ่มความคืบหน้าของบัญชีนี้ใหม่'); } return cLoadProfile().then(function () { if (got) { toast('เข้าสู่ระบบแล้ว'); } }).catch(function () { }).then(function () { return islSync(); }).then(function (m) { if (m === 'pulled') { toast('นำค่าตกแต่งเกาะจากบัญชีมาใช้แล้ว'); } }).catch(function () { }).then(function () { return bkSync(true); }).then(function (m) { if (m === 'merged') { toast('รวมความคืบหน้าจากบัญชีเข้ามาแล้ว'); } cRender(); }).catch(function () { cRender(); }); }
   }).then(function () { cRender(); if (tabNow === 'rank') { cRefreshBoard(); } });
   setInterval(function () { if (signedIn() && CS.nick) { cPush(false).catch(function () { }); } bkSync(false).catch(function () { }); uReport(); }, 30000);
   uReport();
@@ -3508,7 +3534,7 @@ function renderBook() {
   }
   setHTML($('bkBody'), evs);
 }
-var BUILD = '76bb85974f';
+var BUILD = 'a41c07e92d';
 function renderSkinSel() {
   var sel = $('setSkin'), i, id, d, h = '', hrs = S.total / 3600, c;
   for (i = 0; i < SKIN_ORDER.length; i++) { id = SKIN_ORDER[i]; h += '<option value="' + id + '">' + SKINS[id].name + '</option>'; }
