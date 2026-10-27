@@ -492,9 +492,17 @@ input[type=email]{min-height:44px;width:100%;padding:6px 12px;border:2px solid v
           <label class="chk"><input type="checkbox" id="setWake"> ไม่ให้หน้าจอดับขณะจับเวลา</label>
           <label class="chk"><input type="checkbox" id="setUsage"> ช่วยนับสถิติการใช้งานรวมแบบไม่ระบุตัวตน (ส่งแค่วัน รหัสสุ่มของเครื่อง และจำนวนวินาทีที่อ่าน)</label>
           <label class="chk"><input type="checkbox" id="setChime"> เสียงเตือนเมื่อจบรอบ Pomodoro</label>
+          <label class="chk" id="setVibRow"><input type="checkbox" id="setVib"> สั่นเมื่อจบรอบอ่านหรือเวลาพัก (เฉพาะมือถือที่รองรับ และต้องเปิดแอปค้างไว้บนหน้าจอ)</label>
+          <div class="fld"><label>บัญชี</label><div class="hint" id="acctInfo"></div>
+            <div class="row"><button type="button" class="btn small" id="acctOut" hidden>ออกจากระบบ</button></div></div>
           <div class="hint">
             <p>กติกาการนับ: นับเฉพาะเวลาอ่านขณะจับเวลาเดิน เวลาพักไม่ถูกนับ การสลับแท็บไม่ทำให้เวลาหยุด วันที่อ่านครบ 10 นาทีขึ้นไปนับเป็นสตรีค หากขาดวัน สตรีคเริ่มใหม่ แต่ชั่วโมงสะสมและยุคที่ปลดล็อกแล้วไม่หาย ถ้าเครื่องหลับหรือปิดหน้านานเกิน 2 นาที ช่วงนั้นจะไม่ถูกนับและตัวจับเวลาจะหยุดรอ</p>
           </div>
+        </section>
+        <section class="card" id="installCard" hidden>
+          <h2><svg class="ic"><use href="#i-book"/></svg>ติดตั้งแอป</h2>
+          <p class="hint" id="installTip"></p>
+          <div class="row"><button type="button" class="btn small" id="installBtn" hidden>ติดตั้งแอป</button></div>
         </section>
         <section class="card" id="newsCard">
           <h2><svg class="ic"><use href="#i-book"/></svg>มีอะไรใหม่</h2>
@@ -761,6 +769,7 @@ function eraProgress(hours, idx) {
 
 /* ===== บันทึกการอัปเดต (ใหม่สุดอยู่บนสุด) d = วันที่ yyyy-mm-dd; ก่อนหน้านั้นไม่มีบันทึกวันที่ ===== */
 var CHANGES = [
+  { d: '2026-10-27', t: 'บัญชี การสั่น และติดตั้งแอป', i: ['หน้าตั้งค่าแสดงอีเมลที่ล็อกอินอยู่ พร้อมปุ่มออกจากระบบ', 'สั่นเมื่อจบรอบอ่านหรือเวลาพัก (ตั้งปิดได้ในตั้งค่า)', 'มีปุ่มติดตั้งแอปในตั้งค่า'] },
   { d: '2026-10-27', t: 'แสดงวินาที', i: ['เวลาอ่านวันนี้และเวลาอ่านสะสมแสดงเป็น ชม. นาที วินาที ในการ์ดเป้าหมาย หัวหน้าหลัก สถิติ และหน้าอันดับ', 'ตัวเลขอัปเดตทุกวินาที'] },
   { d: '2026-10-27', t: 'แก้ความคืบหน้าปะปนข้ามบัญชี', i: ['ล็อกอินด้วยอีเมลอื่นบนเครื่องเดิม ความคืบหน้า ยุค สกินและของตกแต่งจะเริ่มใหม่ตามบัญชีนั้น ไม่ติดมาจากบัญชีก่อน', 'กลับมาล็อกอินบัญชีเดิมแล้วข้อมูลเดิมของบัญชีนั้นกลับมา'] },
   { d: '2026-10-25', t: 'สำรองความคืบหน้าอัตโนมัติ', i: ['ล็อกอินแล้วแอปสำรองชั่วโมงอ่าน บันทึกรายวัน ชื่อวิชา และการตั้งค่าขึ้นบัญชีให้เอง ไม่ต้องกดซิงก์', 'รวมข้อมูลจากหลายเครื่องแบบไม่ลดลง ปิดได้ที่หน้าอันดับ', 'มีหน้า "มีอะไรใหม่" ในตั้งค่า'] },
@@ -2583,7 +2592,7 @@ function defaultState() {
   for (i = 0; i < DEFAULT_SUBJECTS.length; i++) { subs.push({ id: DEFAULT_SUBJECTS[i].id, name: DEFAULT_SUBJECTS[i].name, col: DEFAULT_SUBJECTS[i].col }); }
   return {
     v: 1, total: 0, subjects: subs, cur: 'th', days: {}, gd: '',
-    set: { goal: 60, focus: 25, brk: 5, sound: 'off', vol: 50, wake: true, chime: true, pal: 'game' },
+    set: { goal: 60, focus: 25, brk: 5, sound: 'off', vol: 50, wake: true, chime: true, vib: true, pal: 'game' },
     tm: { mode: 'free', running: false, phase: 'focus', el: 0, sess: 0, last: 0 }
   };
 }
@@ -2632,6 +2641,7 @@ function sanitize(r, keepTimer) {
     s.set.vol = Math.round(num(r.set.vol, 0, 100, 50));
     s.set.wake = r.set.wake !== false;
     s.set.chime = r.set.chime !== false;
+    s.set.vib = r.set.vib !== false;
     s.set.pal = r.set.pal === 'full' ? 'full' : 'game';
   }
   if (r.tm && typeof r.tm === 'object') {
@@ -3070,8 +3080,15 @@ function fmtVal(r) {
   if (CS.rtab === 'streak') { return r.streak + ' วัน'; }
   return fmtHMS(r.total_sec);
 }
+function renderAcct() {
+  var el = $('acctInfo'), b = $('acctOut');
+  if (!el) { return; }
+  if (signedIn()) { el.innerHTML = 'เข้าสู่ระบบเป็น <b>' + esc(CS.mail || 'บัญชีของคุณ') + '</b>' + (CS.nick ? ' · ชื่อในอันดับ ' + esc(CS.nick) : ''); if (b) { b.hidden = false; } }
+  else { el.textContent = 'ยังไม่ได้เข้าสู่ระบบ ข้อมูลเก็บในเครื่องนี้เท่านั้น (เข้าสู่ระบบได้ที่แท็บอันดับ)'; if (b) { b.hidden = true; } }
+}
 function cRender() {
   var box = $('rankBody'), h = '', i, r, me, mine = false, e;
+  renderAcct();
   if (!box) { return; }
   if (!cloudOn()) {
     setHTML(box, '<div class="card"><h2>ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์</h2><p class="hint">ฟีเจอร์ล็อกอินและอันดับออนไลน์ต้องมีฐานข้อมูล Supabase ของเจ้าของแอป ทำตามขั้นตอนในไฟล์ README แล้วใส่ค่า url กับ key ที่ต้นโค้ดส่วน CLOUD ระหว่างนี้แอปทำงานแบบเก็บข้อมูลในเครื่องตามปกติ</p></div>');
@@ -3169,6 +3186,37 @@ document.addEventListener('change', function (e) {
     if (CS.nick) { cPush(true).then(function () { toast(CS.show ? 'แสดงในอันดับแล้ว' : 'ซ่อนจากอันดับแล้ว'); return cBoard(); }).then(cRender).catch(cErr); }
   }
 });
+/* ===== ปุ่มติดตั้งแอป (PWA) ===== */
+var IP = { ev: null };
+function isStandalone() { return !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true); }
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function renderInstall() {
+  var card = $('installCard'), btn = $('installBtn'), tip = $('installTip');
+  if (!card || !btn || !tip) { return; }
+  if (isStandalone()) { card.hidden = true; return; }
+  if (IP.ev) { card.hidden = false; btn.hidden = false; tip.textContent = 'ติดตั้งแอปไว้ที่หน้าจอหลัก เปิดได้เต็มจอเหมือนแอปทั่วไป'; }
+  else if (isIOS()) { card.hidden = false; btn.hidden = true; tip.textContent = 'บน iPhone หรือ iPad: แตะปุ่มแชร์ใน Safari แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"'; }
+  else { card.hidden = true; }
+}
+window.addEventListener('beforeinstallprompt', function (ev) { ev.preventDefault(); IP.ev = ev; renderInstall(); });
+window.addEventListener('appinstalled', function () { IP.ev = null; renderInstall(); toast('ติดตั้งแอปแล้ว'); });
+if ($('installBtn')) {
+  $('installBtn').addEventListener('click', function () {
+    var ev = IP.ev;
+    if (!ev) { return; }
+    IP.ev = null;
+    try { ev.prompt(); } catch (e) { renderInstall(); return; }
+    if (ev.userChoice && ev.userChoice.then) { ev.userChoice.then(renderInstall, renderInstall); } else { renderInstall(); }
+  });
+}
+if ($('acctOut')) {
+  $('acctOut').addEventListener('click', function () {
+    cClear(); CS.msg = ''; cRender(); cRefreshBoard(); renderAcct();
+    toast('ออกจากระบบแล้ว ข้อมูลในเครื่องยังอยู่ครบ');
+  });
+}
+renderInstall();
+
 /* ===== กันข้อมูลข้ามบัญชี: เก็บว่าข้อมูลในเครื่องเป็นของบัญชีไหน ถ้าล็อกอินด้วยบัญชีอื่น ให้เริ่มใหม่ ===== */
 var OWNER_K = 'fre.owner', STASH_K = 'fre.stash.';
 function ownerGuard() {
@@ -3328,7 +3376,9 @@ function audioStart(kind) {
 function audioSync() {
   if (S.tm.running && S.set.sound !== 'off') { audioStart(S.set.sound); } else if (AU.kind !== 'off' && !AU.preview) { audioStop(); }
 }
+function buzz() { try { if (navigator.vibrate) { navigator.vibrate([250, 120, 250, 120, 500]); } } catch (e) { } }
 hooks.chime = function () {
+  if (S.set.vib !== false) { buzz(); }
   if (!S.set.chime) { return; }
   var c = audioCtx(), t, i, o, g;
   if (!c) { return; }
@@ -3544,7 +3594,7 @@ function renderBook() {
   }
   setHTML($('bkBody'), evs);
 }
-var BUILD = 'e92b6a40d1';
+var BUILD = '3f7a90c2b8';
 function renderSkinSel() {
   var sel = $('setSkin'), i, id, d, h = '', hrs = S.total / 3600, c;
   for (i = 0; i < SKIN_ORDER.length; i++) { id = SKIN_ORDER[i]; h += '<option value="' + id + '">' + SKINS[id].name + '</option>'; }
@@ -3590,7 +3640,7 @@ function renderSettings() {
   $('setGoal').value = S.set.goal; $('setFocus').value = S.set.focus; $('setBreak').value = S.set.brk;
   $('setSound').value = S.set.sound; $('setVol').value = S.set.vol;
   renderSkinSel();
-  $('setTheme').value = THEME; $('setUsage').checked = !UOFF; $('setWake').checked = S.set.wake; $('setChime').checked = S.set.chime;
+  renderAcct(); renderInstall(); $('setTheme').value = THEME; $('setUsage').checked = !UOFF; $('setWake').checked = S.set.wake; $('setChime').checked = S.set.chime; $('setVib').checked = S.set.vib !== false; $('setVibRow').hidden = !(navigator.vibrate);
   for (i = 0; i < S.subjects.length; i++) {
     s = S.subjects[i];
     h += '<div class="subitem"><span><span class="dot" style="background:' + s.col + '"></span>' + esc(s.name) + '</span><button type="button" class="btn small danger" data-act="delSub" data-id="' + s.id + '" aria-label="ลบวิชา ' + esc(s.name) + '">ลบ</button></div>';
@@ -3771,6 +3821,7 @@ $('tab-set').addEventListener('change', function (e) {
   else if (id === 'setUsage') { UOFF = !e.target.checked; try { localStorage.setItem('fre.usage', UOFF ? 'off' : 'on'); } catch (e8) { } }
   else if (id === 'setWake') { S.set.wake = e.target.checked; wakeSync(); }
   else if (id === 'setChime') { S.set.chime = e.target.checked; }
+  else if (id === 'setVib') { S.set.vib = e.target.checked; if (e.target.checked) { buzz(); } }
   save(); renderSettings(); renderDynamic();
 });
 $('setVol').addEventListener('input', function (e) {
