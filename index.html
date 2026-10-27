@@ -761,6 +761,7 @@ function eraProgress(hours, idx) {
 
 /* ===== บันทึกการอัปเดต (ใหม่สุดอยู่บนสุด) d = วันที่ yyyy-mm-dd; ก่อนหน้านั้นไม่มีบันทึกวันที่ ===== */
 var CHANGES = [
+  { d: '2026-10-27', t: 'แสดงวินาที', i: ['เวลาอ่านวันนี้และเวลาอ่านสะสมแสดงเป็น ชม. นาที วินาที ในการ์ดเป้าหมาย หัวหน้าหลัก และสถิติ', 'ตัวเลขอัปเดตทุกวินาที'] },
   { d: '2026-10-27', t: 'แก้ความคืบหน้าปะปนข้ามบัญชี', i: ['ล็อกอินด้วยอีเมลอื่นบนเครื่องเดิม ความคืบหน้า ยุค สกินและของตกแต่งจะเริ่มใหม่ตามบัญชีนั้น ไม่ติดมาจากบัญชีก่อน', 'กลับมาล็อกอินบัญชีเดิมแล้วข้อมูลเดิมของบัญชีนั้นกลับมา'] },
   { d: '2026-10-25', t: 'สำรองความคืบหน้าอัตโนมัติ', i: ['ล็อกอินแล้วแอปสำรองชั่วโมงอ่าน บันทึกรายวัน ชื่อวิชา และการตั้งค่าขึ้นบัญชีให้เอง ไม่ต้องกดซิงก์', 'รวมข้อมูลจากหลายเครื่องแบบไม่ลดลง ปิดได้ที่หน้าอันดับ', 'มีหน้า "มีอะไรใหม่" ในตั้งค่า'] },
   { d: '2026-10-25', t: 'ซิงก์การตกแต่งเกาะ + สภาพอากาศ', i: ['สกิน ชื่อเกาะ และของตกแต่งตามไปทุกเครื่องที่ล็อกอิน', 'สภาพอากาศบนเกาะ: ฝน หมอก หิมะ หรืออัตโนมัติ', 'โหมดประหยัดเครื่องสำหรับเครื่องช้า'] },
@@ -2807,6 +2808,15 @@ function fmtHM(sec) {
   return h > 0 ? (h + ' ชม. ' + (m % 60) + ' นาที') : (m + ' นาที');
 }
 
+function fmtHMS(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60, o = [];
+  if (h > 0) { o.push(h + ' ชม.'); }
+  if (h > 0 || m > 0) { o.push(m + ' นาที'); }
+  o.push(s + ' วิ');
+  return o.join(' ');
+}
+
 /* ===== บัญชีและอันดับ (Supabase ผ่าน REST ตรง ไม่ใช้ไลบรารี) =====
    ใส่ค่าสองบรรทัดนี้ตาม README (ค่า anon key เป็นค่าสาธารณะ ปลอดภัยที่จะอยู่ในโค้ด เพราะสิทธิ์คุมด้วย RLS ฝั่งฐานข้อมูล)
    ถ้าเว้นว่าง แอปยังใช้ได้ตามปกติโดยไม่มีหน้าอันดับออนไลน์ */
@@ -3392,7 +3402,7 @@ function renderGoal() {
   var sec = todaySec(), goal = S.set.goal * 60, pct = Math.min(100, Math.round(sec / goal * 100));
   $('goalFill').style.width = pct + '%';
   $('goalBar').className = 'mb goal' + (sec >= goal ? ' done' : '');
-  setText($('goalText'), fmtHM(sec) + ' / ' + S.set.goal + ' นาที' + (sec >= goal ? ' ครบแล้ว' : ''));
+  setText($('goalText'), fmtHMS(sec) + ' / ' + S.set.goal + ' นาที' + (sec >= goal ? ' ครบแล้ว' : ''));
 }
 function renderDynamic() {
   var hrs = S.total / 3600, cur = curEra(), p = eraProgress(hrs, cur), idx = view !== null ? view : cur, left, nx;
@@ -3412,7 +3422,7 @@ function renderDynamic() {
   $('mEra').style.width = Math.round(p * 100) + '%';
   setText($('mEraV'), Math.round(p * 100) + '%');
   $('mAll').style.width = Math.min(100, hrs / GOAL_H * 100).toFixed(1) + '%';
-  setText($('mAllV'), hrs.toFixed(1) + ' / ' + GOAL_H + ' ชม.');
+  setText($('mAllV'), fmtHMS(S.total) + ' / ' + GOAL_H + ' ชม.');
   renderTimer();
   renderGoal();
   renderGoals2();
@@ -3464,7 +3474,7 @@ function renderClockHead() {
   setText($('dateTxt'), 'วัน' + DOW[d.getDay()] + 'ที่ ' + d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 4) + ' ' + (d.getFullYear() + 543));
   setText($('timeTxt'), (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi);
   var st = streakInfo();
-  setText($('heroSub'), 'อ่านวันนี้ ' + fmtHM(todaySec()) + ' · สตรีค ' + st.cur + ' วัน · เกาะของเราอยู่ยุค' + ERAS[curEra()].name);
+  setText($('heroSub'), 'อ่านวันนี้ ' + fmtHMS(todaySec()) + ' · สตรีค ' + st.cur + ' วัน · เกาะของเราอยู่ยุค' + ERAS[curEra()].name);
 }
 function renderSubj() {
   var h = '', i, s;
@@ -3490,10 +3500,10 @@ function chartSvg() {
 }
 function renderStatRows() {
   var st = streakInfo(), h = '';
-  h += '<div class="srow"><dt>อ่านวันนี้</dt><dd>' + esc(fmtHM(todaySec())) + '</dd></div>';
+  h += '<div class="srow"><dt>อ่านวันนี้</dt><dd>' + esc(fmtHMS(todaySec())) + '</dd></div>';
   h += '<div class="srow"><dt>สตรีคปัจจุบัน</dt><dd>' + st.cur + ' วัน</dd></div>';
   h += '<div class="srow"><dt>สตรีคสูงสุด</dt><dd>' + st.best + ' วัน</dd></div>';
-  h += '<div class="srow"><dt>สะสมทั้งหมด</dt><dd>' + (S.total / 3600).toFixed(1) + ' ชม.</dd></div>';
+  h += '<div class="srow"><dt>สะสมทั้งหมด</dt><dd>' + esc(fmtHMS(S.total)) + '</dd></div>';
   setHTML($('statRows'), h);
 }
 function renderStats() {
@@ -3534,7 +3544,7 @@ function renderBook() {
   }
   setHTML($('bkBody'), evs);
 }
-var BUILD = 'a41c07e92d';
+var BUILD = 'c58e13b7f0';
 function renderSkinSel() {
   var sel = $('setSkin'), i, id, d, h = '', hrs = S.total / 3600, c;
   for (i = 0; i < SKIN_ORDER.length; i++) { id = SKIN_ORDER[i]; h += '<option value="' + id + '">' + SKINS[id].name + '</option>'; }
@@ -3632,7 +3642,8 @@ function second() {
   saveCtr++;
   if (saveCtr >= 5) { saveCtr = 0; if (S.tm.running) { save(); } }
   statCtr++;
-  if (statCtr >= 5) { statCtr = 0; renderStatRows(); renderOverview(); renderClockHead(); if (tabNow === 'stats') { renderStats(); } }
+  renderStatRows(); renderClockHead();
+  if (statCtr >= 5) { statCtr = 0; renderOverview(); if (tabNow === 'stats') { renderStats(); } }
 }
 function afterAction() {
   save(); audioSync(); wakeSync(); renderDynamic(); renderSubj();
