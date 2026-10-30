@@ -1,107 +1,85 @@
-# Focus Reading Evolution
+# ATLAS — Knowledge Workspace
 
-แอปจับเวลาอ่านหนังสือสำหรับวัยเรียน ยิ่งอ่านสะสมนาน พื้นที่พิกเซลผืนเดิมก็ยิ่งพัฒนา เริ่มจากถ้ำยุคหินเก่า ผ่านยุคต่าง ๆ ของประวัติศาสตร์โลกและไทย จนถึงยุคดิจิทัล และปิดด้วยบทส่งท้ายเมื่ออ่านสะสมครบ 540 ชั่วโมง (แนวคิด 6 เดือน เฉลี่ยวันละราว 3 ชั่วโมง)
+A spatial notebook. Concepts are cards floating in a warm paper space, relationships
+are thin lines between them, and every card opens into a full notebook sheet you can
+type on and draw on.
 
-## ฟีเจอร์
+One file: `index.html`. No build step, no framework, no account, no server.
 
-- หน้าตาแดชบอร์ดอบอุ่นสีครีม-เขียวเสจ: ป้ายไม้ชื่อแอปและเมนูทางซ้าย (บนมือถือเป็นแถบเมนูล่าง) หัวทักทายพร้อมวันเวลา การ์ดจับเวลา วิชา เป้าหมายพร้อมแถบความคืบหน้า และภาพรวมพร้อมดาวกับปฏิทินวันที่อ่าน
-- ฉากพิกเซลเกาะลอยฟ้าแบบไอโซเมตริกในกรอบเกม มุมกล้องเดิมตลอด มีป้ายม้วนกระดาษแจ้งยุคถัดไป และช่องยุค 14 ช่องด้านล่าง เกาะเดียวกันเปลี่ยนตามเวลาอ่านสะสม 14 ยุค ฟ้าเปลี่ยนตามเวลาจริง และมีบทส่งท้าย
-- ท้องฟ้าตามเวลาจริงของเครื่อง (กลางวัน พลบค่ำ กลางคืน ดาว พระจันทร์)
-- จับเวลาอิสระ และ Pomodoro (ตั้งเวลาอ่าน/พักได้ ค่าเริ่มต้น 25/5)
-- เลือกวิชา เพิ่มหรือลบวิชาได้ (สูงสุด 12 วิชา)
-- สถิติรายวัน กราฟ 7 วัน สตรีค และสรุปแยกตามวิชา
-- เป้าหมายรายวัน
-- เสียงบรรยากาศสร้างด้วย Web Audio (ฝน ลำธาร ลม เตาผิง) เล่นขณะตัวจับเวลาเดิน
-- สมุดประวัติศาสตร์: เกร็ดประวัติศาสตร์ของแต่ละยุคพร้อมลิงก์แหล่งอ้างอิง และป้ายบอกเมื่อปีหรือรายละเอียดยังถกเถียงกัน
-- กดแถบยุคเพื่อดูฉากของยุคที่ปลดล็อกแล้วย้อนหลัง
-- รองรับมือถือและคอมพิวเตอร์ ไม่ต้องล็อกอิน
+## The map
 
-## กติกาการนับเวลา
+- **Cards** are physical objects: a coloured category edge, a catalogue number, the
+  title set in a serif, a short preview of the note, and a link count.
+- **Select a card** (click or tap) and its outline turns cobalt, its direct
+  connections light up, everything unrelated recedes, and the concept panel opens.
+- **Hover** lifts a card slightly and strengthens its outline.
+- **Drag** a card to move it through space; drag empty space to orbit; right-drag or
+  two-finger drag to pan; scroll to zoom. Dragging a card never rotates the camera.
+- **Groups** appear as a faint wash with a small caps plaque naming the category.
+  Grouping comes from the category on each concept, and connections are free to cross
+  groups.
+- **Camera**: `Focus` frames the selected concept and its neighbourhood, `Fit` frames
+  the whole map inside the space your panels leave free, `Reset` returns home. Any
+  manual camera movement interrupts a camera move in progress.
 
-- นับเฉพาะเวลาที่ตัวจับเวลาเดินในช่วงอ่าน เวลาพักไม่นับ
-- สลับแท็บแล้วตัวจับเวลายังเดินต่อ (คำนวณจากนาฬิกาเครื่อง ไม่หยุดตามแท็บ)
-- ถ้าเครื่องหลับหรือปิดหน้าเกิน 2 นาที ช่วงนั้นจะไม่ถูกนับ และตัวจับเวลาหยุดรอให้กดเริ่มใหม่
-- วันที่อ่านครบ 10 นาทีขึ้นไปนับเป็นหนึ่งวันของสตรีค
-- ขาดวันอ่านแล้วสตรีคเริ่มใหม่ แต่ชั่วโมงสะสมและยุคที่ปลดล็อกแล้วไม่หาย
-- ตารางปลดล็อก (ชั่วโมงสะสม): 0, 8, 20, 36, 56, 80, 108, 140, 176, 216, 262, 316, 390, 470 และบทส่งท้ายที่ 540
+## The notebook
 
-## ข้อมูล การสำรอง และกู้คืน
+Opening a card (double-click, or **Open notebook**) grows a sheet out of that card.
+Inside you get the full editor: rich text, a 1000×1300 sketch page with ten paper
+styles (ruled, grid, dot, isometric, Cornell, staff, engineering, dark…), pen,
+highlighter, eraser and pan tools, adjustable stroke width and opacity, colour
+swatches, zoom and pan, undo/redo, and clear. Coming back to the map saves
+everything and returns the camera to that concept.
 
-ข้อมูลทั้งหมดเก็บใน `localStorage` ของเบราว์เซอร์ในเครื่องนั้น (คีย์ `fre.state.v1`) ไม่มีเซิร์ฟเวอร์ ไม่ส่งข้อมูลไปที่ไหน
+## Keys
 
-- ข้ามเครื่องหรือข้ามเบราว์เซอร์ข้อมูลจะไม่ตามไป ใช้แท็บ ตั้งค่า > ส่งออกข้อมูล แล้วนำเข้าอีกเครื่อง
-- การล้างข้อมูลเว็บไซต์ในเบราว์เซอร์จะลบความคืบหน้า ควรส่งออกสำรองไว้เป็นระยะ
-- ข้อมูลที่นำเข้าถูกตรวจชนิด ความยาว ช่วงตัวเลข และรูปแบบวันที่ก่อนใช้งาน
-- ถ้าเบราว์เซอร์เก็บข้อมูลไม่ได้ (เช่น โหมดส่วนตัว) จะมีแถบเตือนด้านบน
+| Where | Key | Action |
+|---|---|---|
+| Map | `N` | New concept |
+| Map | `C` | Connect the selected concept to another |
+| Map | `F` | Focus the selected concept |
+| Map | `0` | Fit the whole map |
+| Map | `O` | Open the selected concept's notebook |
+| Map | `/` | Search |
+| Map | `I` | Show/hide the index |
+| Map | `Del` / `Backspace` | Delete (press twice to confirm) |
+| Map | `Esc` | Cancel connect mode / clear selection |
+| Notebook | `P` `L` `E` `H` | Pen, highlighter, eraser, pan |
+| Notebook | `+` `-` `0` `F` | Zoom in, out, 100%, fit page |
+| Notebook | `Ctrl/⌘ Z` / `Shift Ctrl/⌘ Z` | Undo / redo |
+| Notebook | `Space` (hold) | Pan while drawing |
+| Notebook | `Esc` | Back to the map |
 
-## เกร็ดประวัติศาสตร์
+## Your data
 
-เหตุการณ์ในแอปผ่านการตรวจกับแหล่งที่ลิงก์ไว้ในแต่ละรายการ รายการที่ปีเป็นค่าประมาณหรือแหล่งข้อมูลให้ตัวเลขไม่ตรงกัน (เช่น ปีสถาปนาอยุธยา ยุทธหัตถี อายุสำริดบ้านเชียง) จะมีป้ายกำกับไว้ในข้อความ แหล่งอ้างอิงบางรายการเป็นเว็บข่าวหรือบทความทั่วไป ไม่ใช่งานวิชาการ ควรตรวจกับแหล่งปฐมภูมิก่อนใช้ในรายงานจริง ฉากภาพวาดเป็นภาพแทนเชิงสัญลักษณ์ ไม่ใช่การจำลองตามหลักฐานทางโบราณคดี
+Everything is stored in this browser only, in IndexedDB (`atlas` → `kv` → `ws`).
+Nothing is uploaded and there is no account.
 
-## ขึ้น GitHub Pages
+- **Data** in the top bar copies the whole workspace as JSON, downloads it as a file,
+  and merges a pasted workspace back in. Merging only ever adds — nothing you already
+  have is replaced.
+- Clearing site data for this page deletes the workspace, so export a backup now and
+  then.
+- Thai and English are both fine: the type stack falls back to Noto Sans Thai, and
+  every label is real text with sensible system fallbacks if the web fonts fail.
+- If the browser has no WebGL, the map says so and the index still opens every
+  concept and notebook.
 
-1. สร้าง repository ใหม่บน GitHub
-2. อัปโหลดไฟล์ `index.html` และ `README.md` ไปที่ราก (ชื่อไฟล์ต้องตรงเป๊ะ ไม่มี `(2)` ต่อท้าย ถ้าชื่อซ้ำให้ลบไฟล์เก่าก่อนแล้วอัปโหลดใหม่)
-3. ไปที่ Settings > Pages เลือก Deploy from a branch เลือก branch `main` และโฟลเดอร์ `/ (root)` แล้วกด Save
-4. รอประมาณ 1 ถึง 2 นาที แล้วเปิดลิงก์ที่หน้า Pages แสดง
+## Running it locally
 
-## ล็อกอินและอันดับออนไลน์ (ไม่บังคับ)
+It is a static page — open `index.html`, or serve the folder:
 
-แอปใช้ได้เต็มที่โดยไม่ล็อกอิน (เก็บในเครื่อง) ส่วนหน้า "อันดับ" ใช้ Supabase เป็นฐานข้อมูล ตั้งค่าครั้งเดียวดังนี้
+```bash
+python3 -m http.server 3000
+```
 
-1. สมัคร supabase.com แล้วสร้างโปรเจกต์ (แผนฟรีพอ)
-2. เมนู SQL Editor วางเนื้อหาไฟล์ `supabase.sql` แล้วกด Run (สร้างตาราง `profiles` พร้อมกฎความปลอดภัย RLS)
-3. เมนู Authentication > URL Configuration ใส่ Site URL เป็นที่อยู่เว็บ GitHub Pages ของคุณ และเพิ่มที่อยู่เดียวกันใน Redirect URLs
-4. ล็อกอินด้วยลิงก์อีเมลใช้ได้ทันที ถ้าจะเปิด Google ให้ไปที่ Authentication > Providers > Google แล้วใส่ Client ID/Secret จาก Google Cloud
-5. เมนู Project Settings > API คัดลอก Project URL และ anon public key ไปใส่ในบรรทัด `var CLOUD = { url: '', key: '' };` ใกล้ต้นส่วน script ของ `index.html` (ค้นหาคำว่า CLOUD) ค่า anon key เป็นค่าสาธารณะ ห้ามใช้ service_role key
+For the sandbox development environment use `docker-compose.base44.yml`
+(see `AGENTS.md`). Three.js and the fonts load from public CDNs, so the first load
+needs a network connection; after that the service worker keeps the app available
+offline, serving fresh HTML from the network whenever it can.
 
-ข้อมูลที่ส่งขึ้นเซิร์ฟเวอร์มีเฉพาะ ชื่อเล่นที่ตั้งเอง ชั่วโมงอ่านรวม ยุคที่ถึง สตรีค และเวลาอ่านสัปดาห์นี้ ไม่ส่งอีเมล ชื่อวิชา หรือบันทึกรายวัน ผู้ใช้ปิดการแสดงในอันดับหรือลบข้อมูลของตัวเองบนเซิร์ฟเวอร์ได้จากหน้าอันดับ ตัวเลขมาจากเครื่องผู้ใช้ จึงโกงได้ ใช้เพื่อสร้างกำลังใจเท่านั้น ไม่ใช่การแข่งขันที่มีรางวัล ลิงก์ Artifact ในแชทมีข้อจำกัดเครือข่าย จึงใช้อันดับออนไลน์ได้เฉพาะเวอร์ชัน GitHub Pages
+## Publishing
 
-## สถิติการใช้งานรวม (ผู้ใช้ต่อวัน กี่คน กี่นาที)
-
-เมื่อรันไฟล์ `supabase.sql` ครบ (รวมส่วนท้ายที่ขึ้นต้นว่า สถิติการใช้งานรวม) หน้า "อันดับ" จะมีการ์ด "สถิติการใช้งานของทุกคน" แสดง 14 วันล่าสุด ว่าแต่ละวันมีกี่คนอ่าน และอ่านรวมกี่นาที พร้อมยอดรวมทั้งหมด
-
-- นับ "คน" จากเครื่องที่อ่านอย่างน้อย 1 นาทีในวันนั้น โดยใช้รหัสสุ่มที่สร้างในเครื่อง ไม่ผูกกับชื่อหรืออีเมล และไม่ต้องล็อกอิน (คนที่ล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่องจะถูกนับเป็นเครื่องใหม่)
-- ส่งขึ้นเซิร์ฟเวอร์เฉพาะ วันที่ รหัสสุ่ม และจำนวนวินาทีที่อ่านวันนั้น ผู้ใช้ปิดได้ที่ ตั้งค่า > ช่วยนับสถิติการใช้งานรวม
-- ตารางไม่เปิดให้เข้าถึงตรงๆ ใช้ผ่านฟังก์ชัน `report_usage` และ `usage_summary` เท่านั้น เจ้าของดูข้อมูลดิบได้ใน SQL Editor (มีตัวอย่างคำสั่งท้ายไฟล์ sql)
-- ตัวเลขมาจากเครื่องผู้ใช้ จึงเป็นค่าประมาณ ไม่ใช่ตัวเลขที่ตรวจสอบได้ และนับเฉพาะเวอร์ชันที่ตั้งค่า CLOUD แล้ว
-
-## ติดตั้งเป็นแอป (PWA)
-
-เวอร์ชัน GitHub Pages ติดตั้งลงเดสก์ท็อปคอมและหน้าจอโฮมของมือถือได้ และเปิดตัวแอปได้แม้ออฟไลน์ (ล็อกอินและอันดับต้องออนไลน์)
-
-- คอม (Chrome/Edge): กดไอคอนติดตั้งที่ท้ายแถบที่อยู่ หรือเมนู ⋮ > ติดตั้ง Focus Reading Evolution
-- Android (Chrome): เมนู ⋮ > ติดตั้งแอป หรือ เพิ่มลงในหน้าจอหลัก
-- iPhone (Safari): ปุ่มแชร์ > เพิ่มไปยังหน้าจอโฮม
-
-ไฟล์ที่ต้องอัปโหลดไว้ที่รากของ repository ทั้งหมด 6 ไฟล์ ชื่อตรงตัว: `index.html`, `README.md`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png` และ `apple-touch-icon.png` (รวมเป็น 7 ไฟล์ รวม README) ถ้าอัปเดตแอปแล้วหน้าเดิมยังเป็นฉบับเก่า ให้เปิดซ้ำอีกครั้ง หรือเปลี่ยนค่า `CACHE` ใน `sw.js` จาก fre-v1 เป็น fre-v2
-
-ข้อควรรู้: ข้อมูลของแอปที่ติดตั้งอาจแยกจากแท็บเบราว์เซอร์ปกติบางตัว ถ้าย้ายให้ใช้ส่งออก/นำเข้าข้อมูลในหน้าตั้งค่า
-
-## การทดสอบที่ทำแล้ว
-
-ทดสอบด้วย Chromium จริงผ่าน Playwright: ไม่มี page error, ฉากทุกยุคแสดงผล, จับเวลาอิสระ Pomodoro การพัก เครื่องหลับ การบันทึกและโหลดซ้ำ การปลดล็อกยุค บทส่งท้าย การเพิ่ม/ลบ/เลิกทำวิชา ส่งออก/นำเข้า/ล้างข้อมูล การสลับหน้าเมนู และระบบล็อกอิน/อันดับกับเซิร์ฟเวอร์จำลองในเครื่อง (ยังไม่ได้ทดสอบกับ Supabase จริงและ Google login จริง) และเลย์เอาต์ 1280px กับ 390px ไม่เลื่อนแนวนอน ยังไม่ได้ทดสอบบนมือถือจริง เสียงบรรยากาศ และการไม่ให้จอดับ (ต้องใช้อุปกรณ์จริง)
-
-## สกินเกาะ (ฟรี)
-ตั้งค่า → "สกินเกาะ": คลาสสิก / ซากุระ / Frostveil / Azure Paradise / Emerald Haven / Whispering Woods / Lost Civilization / Ashen Frontier (แผ่นดินฟื้นเป็นสีเขียวตามชั่วโมงอ่าน) / Neo Terra
-- เกาะหลักยังโตตามยุคเหมือนเดิม สกินเปลี่ยนสีและเพิ่มของตกแต่งเฉพาะธีม ปลดล็อกตามชั่วโมงอ่านรวม
-- เก็บค่าที่เลือกใน localStorage (`fre.skin`) เป็นเรื่องความสวยงามล้วน ฝั่งเบราว์เซอร์ป้องกันการแก้ไขไม่ได้
-
-## แจ้งเตือนเวอร์ชันใหม่
-เมื่ออัปโหลดไฟล์ใหม่ขึ้น GitHub แล้ว คนที่เปิดแอปค้างไว้จะเห็นแถบ "มีเวอร์ชันใหม่แล้ว" พร้อมปุ่มรีเฟรช (เช็กทุก 5 นาที และตอนกลับมาที่แท็บ) กดแล้วระบบล้างแคชและโหลดหน้าใหม่ให้ ต้องอัปโหลด `sw.js` ตัวใหม่ด้วย
-
-## ตกแต่งเกาะ + โหมดประหยัดเครื่อง
-ตั้งค่า → "ตกแต่งเกาะ": ตั้งชื่อเกาะ (ขึ้นบนป้าย) และวางของตกแต่ง 7 อย่าง (โคมไฟ ม้านั่ง น้ำพุ ป้ายชื่อ สวนดอกไม้ ธงประดับ กองไฟ) ลงช่องวาง 8 ช่อง ช่องปลดล็อกตามชั่วโมงอ่านสะสม ใช้ได้กับทุกสกิน
-- ข้อมูลตกแต่งเก็บในเครื่องนี้ (`fre.deco`, `fre.iname`) ยังไม่รวมอยู่ในไฟล์สำรองข้อมูล
-- "โหมดประหยัดเครื่อง": ปิดเอฟเฟกต์ลอย (หิมะ กลีบดอกไม้ แสงเหนือ นก) และลดความถี่การวาดภาพ
-
-## สำรองความคืบหน้าอัตโนมัติ
-เมื่อล็อกอินแล้ว แอปจะสำรอง ชั่วโมงอ่านรวม บันทึกรายวัน ชื่อวิชา และการตั้งค่า ขึ้นตาราง `user_state` ในบัญชีของคุณเอง (เห็นเฉพาะเจ้าของ ไม่ขึ้นอันดับ) โดยไม่ต้องกดอะไร
-- สำรองทุกประมาณ 1 นาทีขณะมีการเปลี่ยนแปลง และตอนปิด/ซ่อนหน้าเว็บ ดึงมารวมทุก 5 นาทีและตอนเปิดแอป
-- รวมแบบ "ไม่ลดลง": ต่อวัน ใช้ค่าที่มากกว่า (ไม่บวกซ้ำ) วันที่มีแค่เครื่องใดเครื่องหนึ่งก็เพิ่มเข้าไป ชื่อวิชาที่ขาดจะเติมให้ ถ้าอ่านวันเดียวกันบนสองเครื่องพร้อมกัน จะได้ค่าของเครื่องที่อ่านมากกว่า ไม่ใช่ผลรวม
-- ปิดได้ที่หน้า "อันดับ" → ช่อง "สำรองความคืบหน้าขึ้นบัญชีอัตโนมัติ"
-- ปุ่ม "ล้างข้อมูลทั้งหมด" จะลบสำเนาบนบัญชีด้วย (ไม่งั้นข้อมูลจะกลับมาเอง) ถ้าเครื่องออฟไลน์ตอนกด สำเนาอาจยังอยู่
-- ต้องรัน `supabase.sql` ตัวใหม่ก่อน (มีตาราง `user_state`)
-
-## มีอะไรใหม่
-ตั้งค่า → การ์ด "มีอะไรใหม่" แสดงรายการสิ่งที่เปลี่ยนแยกตามวันที่ และรหัสรุ่นที่ใช้อยู่ ทุกครั้งที่อัปเดตเวอร์ชัน ผู้ใช้จะเห็นข้อความแจ้งหนึ่งครั้งให้ไปดูรายการ ผู้ดูแลเพิ่มรายการใหม่ที่ตัวแปร `CHANGES` ในโค้ด (ใหม่สุดอยู่บนสุด)
+The repository is plain static files, so GitHub Pages works as-is: push `index.html`,
+`manifest.json`, `sw.js` and the icons to the root of a branch, then enable Pages for
+that branch and the `/ (root)` folder.

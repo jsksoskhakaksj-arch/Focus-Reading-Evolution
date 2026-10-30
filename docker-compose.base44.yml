@@ -1,0 +1,40 @@
+# Base44 development environment for ATLAS.
+#
+# ATLAS is a single-file, build-free browser artifact (index.html + Three.js from
+# a CDN). There is nothing to compile, so the sandbox serves the cloned source
+# directly with a static file server. Edits to index.html are picked up on the
+# next request — reload the preview to see them.
+services:
+  web:
+    image: python:3.12-alpine
+    working_dir: /app
+    command:
+      - python
+      - -m
+      - http.server
+      - "3000"
+      - --bind
+      - "0.0.0.0"
+      - --directory
+      - /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+    environment:
+      - BASE44_PREVIEW_MODE
+    restart: on-failure
+    labels:
+      base44.project: "ATLAS"
+      base44.kind: "web"
+      base44.port: "3000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:3000/index.html',timeout=4); sys.exit(0 if r.status==200 else 1)
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

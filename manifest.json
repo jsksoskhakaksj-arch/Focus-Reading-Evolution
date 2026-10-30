@@ -1,13 +1,13 @@
 {
-  "name": "Focus Reading Evolution",
-  "short_name": "Focus Reading",
-  "description": "แอปจับเวลาอ่านหนังสือ ยิ่งอ่านนานเกาะพิกเซลยิ่งพัฒนาจากยุคหินถึงยุคดิจิทัล",
-  "lang": "th",
+  "name": "ATLAS — Knowledge Workspace",
+  "short_name": "ATLAS",
+  "description": "A spatial knowledge workspace: concepts as cards, relationships as lines, notebooks as places to think.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#e6e1c8",
-  "theme_color": "#365a3c",
+  "background_color": "#EDEBE6",
+  "theme_color": "#EDEBE6",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
